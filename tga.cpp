@@ -2,7 +2,7 @@
 #include "tga.h"
 #include "bmpfile.h"
 #include "ltga.h"
-
+#include <iostream>
 #include <string.h>
 
 typedef unsigned char byte;
@@ -24,29 +24,29 @@ typedef unsigned long dword;
 #pragma pack (1)
 
 struct PIXEL24 {
-	byte red;							// 8bit ºìÉ«
-	byte green;							// 8bit ÂÌÉ«
-	byte blue;							// 8bit À¼É«
+	byte red;							// 8bit çº¢è‰²
+	byte green;							// 8bit ç»¿è‰²
+	byte blue;							// 8bit å…°è‰²
 };
 
 struct TGAFILEHEADER{
-	byte bIDLength;						//¸½¼ÓĞÅÏ¢³¤¶È
-	byte bPalType;						//µ÷É«°åĞÅÏ¢(²»Ö§³Ö)
-	byte bImageType;					//Í¼ÏóÀàĞÍ(Ö»Ö§³Ö 3,10)
+	byte bIDLength;						//é™„åŠ ä¿¡æ¯é•¿åº¦
+	byte bPalType;						//è°ƒè‰²æ¿ä¿¡æ¯(ä¸æ”¯æŒ)
+	byte bImageType;					//å›¾è±¡ç±»å‹(åªæ”¯æŒ 3,10)
 
-	unsigned short wPalIndex;			//µ÷É«°åµÚÒ»¸öË÷ÒıÖµ
-	unsigned short wPalLength;			//µ÷É«°åË÷ÒıÊı
+	unsigned short wPalIndex;			//è°ƒè‰²æ¿ç¬¬ä¸€ä¸ªç´¢å¼•å€¼
+	unsigned short wPalLength;			//è°ƒè‰²æ¿ç´¢å¼•æ•°
 	byte bPalBits;
 
-	unsigned short wLeft;				//Í¼Ïó×ó¶Ë×ø±ê(»ù±¾²»ÓÃ)
-	unsigned short wBottom;				//Í¼Ïóµ×¶Ë×ø±ê(»ù±¾²»ÓÃ)
-	unsigned short wWidth;				//Í¼Ïó¿í¶È
-	unsigned short wHeight;				//Í¼Ïó¸ß¶È
-	byte bBits;							//Ò»¸öÏóËØÎ»Êı
-	byte bAlphaBits:4;					//AlphaÎ»Êı
-	byte bReserved:1;					//±£Áô,±ØĞëÎª0
-	byte bTopDown:1;					//Îª1±íÊ¾´ÓÉÏµ½ÏÂ(Ö»Ö§³Ö´ÓÏÂµ½ÉÏ)
-	byte bInterleaving:2;				//¸ôĞĞ(Ò»°ãÎª0)
+	unsigned short wLeft;				//å›¾è±¡å·¦ç«¯åæ ‡(åŸºæœ¬ä¸ç”¨)
+	unsigned short wBottom;				//å›¾è±¡åº•ç«¯åæ ‡(åŸºæœ¬ä¸ç”¨)
+	unsigned short wWidth;				//å›¾è±¡å®½åº¦
+	unsigned short wHeight;				//å›¾è±¡é«˜åº¦
+	byte bBits;							//ä¸€ä¸ªè±¡ç´ ä½æ•°
+	byte bAlphaBits:4;					//Alphaä½æ•°
+	byte bReserved:1;					//ä¿ç•™,å¿…é¡»ä¸º0
+	byte bTopDown:1;					//ä¸º1è¡¨ç¤ºä»ä¸Šåˆ°ä¸‹(åªæ”¯æŒä»ä¸‹åˆ°ä¸Š)
+	byte bInterleaving:2;				//éš”è¡Œ(ä¸€èˆ¬ä¸º0)
 };
 #pragma pack (pop)
 
@@ -88,7 +88,7 @@ ltga_t ltga_load_buffer(const char *buff)
 
 void ltga_clip(ltga_t tga)
 {	
-	// ¶Ô¿Õ°×±ß½ç½øĞĞ²Ã¼õ
+	// å¯¹ç©ºç™½è¾¹ç•Œè¿›è¡Œè£å‡
 	int csw, cew, csh, ceh;
 	csw = 0;
 	csh = 0;
@@ -96,7 +96,7 @@ void ltga_clip(ltga_t tga)
 	ceh = tga->height-1;
 	int i, j;
 	unsigned char *alpha_buf = (unsigned char *) tga->alpha_buf;
-	//csw -- ×ó±ß
+	//csw -- å·¦è¾¹
 	for (i=0; i<tga->width; ++i) {
 		for (j=0; j<tga->height; ++j) {
 			if (alpha_buf[i+j*tga->width] > 0) {
@@ -106,7 +106,7 @@ void ltga_clip(ltga_t tga)
 			}
 		}
 	}
-	//csh -- ÉÏ·½
+	//csh -- ä¸Šæ–¹
 	for (j=0; j<tga->height; ++j) {
 		for (i=0; i<tga->width; ++i) {
 			if (alpha_buf[i+j*tga->width] > 0) {
@@ -116,7 +116,7 @@ void ltga_clip(ltga_t tga)
 			}
 		}
 	}
-	//cew -- ÓÒ±ß
+	//cew -- å³è¾¹
 	for (i=tga->width-1; i>=0; --i) {
 		for (j=0; j<tga->height; ++j) {
 			if (alpha_buf[i+j*tga->width] > 0) {
@@ -126,7 +126,7 @@ void ltga_clip(ltga_t tga)
 			}
 		}
 	}
-	//ceh -- ÏÂÃæ
+	//ceh -- ä¸‹é¢
 	for (j=tga->height-1; j>=0; --j) {
 		for (i=0; i<tga->width; ++i) {
 			if (alpha_buf[i+j*tga->width] > 0) {
@@ -206,16 +206,17 @@ bool load_tga_buffer(byte* tgadata, byte **p_rgb_buf, byte **p_alpha_buf,int &wi
 	if ((head->bImageType!=2 && head->bImageType!=10)
 		|| head->bBits!=32 || head->bInterleaving!=0 ) {
 			//delete tgadata;
+			std::cout <<" tag does not match \n";
 			return false;
 	} 
-
+	std::cout <<"bImageType: " << head->bImageType << std::endl;
 	width=(int)head->wWidth,height=(int)head->wHeight;
 	rgb_buf=new byte[width*height*3];
 	channel=new byte[width*height];
 	dataptr=(dword)tgadata+sizeof(TGAFILEHEADER)+head->bIDLength;
 	if (head->bTopDown == 0){
 		if (head->bImageType==2) {
-			// ²»Ñ¹Ëõ
+			// ä¸å‹ç¼©
 			for (i=height-1;i>=0;i--) {
 				line=(PIXEL24*)(rgb_buf+3*width*i);
 				alpha_line=channel+width*i;
@@ -238,7 +239,7 @@ bool load_tga_buffer(byte* tgadata, byte **p_rgb_buf, byte **p_alpha_buf,int &wi
 			}
 		}
 		else {
-			// RLE Ñ¹Ëõ
+			// RLE å‹ç¼©
 			int run=0,raw=0;
 			PIXEL24 runpixel;
 			byte runalpha;
@@ -290,7 +291,7 @@ bool load_tga_buffer(byte* tgadata, byte **p_rgb_buf, byte **p_alpha_buf,int &wi
 	}else{
 
 		if (head->bImageType==2) {
-			// ²»Ñ¹Ëõ
+			// ä¸å‹ç¼©
 			for (i=0;i<height;i++) {
 				line=(PIXEL24*)(rgb_buf+3*width*i);
 				alpha_line=channel+width*i;
@@ -313,7 +314,7 @@ bool load_tga_buffer(byte* tgadata, byte **p_rgb_buf, byte **p_alpha_buf,int &wi
 			}
 		}
 		else {
-			// RLE Ñ¹Ëõ
+			// RLE å‹ç¼©
 			int run=0,raw=0;
 			PIXEL24 runpixel;
 			byte runalpha;
@@ -419,7 +420,7 @@ _break:
 }
 
 
-// Ëõ·Å24Î»Î»Í¼
+// ç¼©æ”¾24ä½ä½å›¾
 void zoom_rgb(PIXEL24* rgb, int &width,int &height, float zoom)
 {
 	int new_w = width * zoom;

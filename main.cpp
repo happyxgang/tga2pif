@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string>
+#include <string.h>
 #include <vector>
 #include <zlib.h>
 #include <unistd.h>
@@ -223,7 +223,14 @@ void get_texture_list(char *input_dir, fsi_header &header, std::vector<struct fs
 	printf("\n");
 	printf(">>> tga file process done\n");
 }
-
+void print_info(fsi_frame_info* info ){
+		printf("offx%u\t\n", info->offx);
+		printf("offy%u\t\n", info->offy);
+		printf("valid_width%u\t\n",info->valid_width);
+		printf("valid_height%u\t\n", info->valid_height);
+		printf("len%u\t\n", info->len);
+		printf("offset%u\t\n", info->offset);
+}
 #define MASK_SCALE 2
 FILE *save_mask(const char *output_file,
 					struct fsi_header &header,
@@ -254,11 +261,12 @@ FILE *save_mask(const char *output_file,
 	snprintf(filename, sizeof(filename), "%s", output_file);
 	f = fopen(filename, "wb");
 
-	fwrite(&header, sizeof(struct fsi_header), 1, f);
+	//fwrite(&header, sizeof(struct fsi_header), 1, f);
 
 	for (i=0; i<tex_list.size(); i++) {
 		struct fsi_texture *tex = &tex_list[i];
 		fwrite(&tex->info, sizeof(struct fsi_frame_info), 1, f);
+		print_info(&tex->info);
 	}
 
 	header.mask_scale = MASK_SCALE;
@@ -288,15 +296,15 @@ FILE *save_mask(const char *output_file,
 	mask_compress((char *)alpha_buff, tga->valid_width, tga->valid_height, MASK_SCALE, buff2, len);
 
 	if (global_option.save_mask) {
-
+		printf("saving mask\n" );
 		header.mask_width = tga->valid_width;
 		header.mask_height = tga->valid_height;
 		header.mask_len = len;
 		header.mask_offset = ftell(f);
 
-		fseek(f, 0, SEEK_SET);
-		fwrite(&header, sizeof(struct fsi_header), 1, f);
-		fseek(f, header.mask_offset, SEEK_SET);
+		//fseek(f, 0, SEEK_SET);
+		//fwrite(&header, sizeof(struct fsi_header), 1, f);
+		//fseek(f, header.mask_offset, SEEK_SET);
 		fwrite(buff2, len, 1, f);
 		header.texture_offset = ftell(f);
 		delete buff2;
@@ -342,7 +350,7 @@ void save_texture(FILE *f,
 			} else {
 				system("convert 1.tga 1.png\n");
 			}
-			system("png8 -f 1.png\n");
+			system("png8 -O 1.png\n");
 			
 			FILE *file = fopen("1.png", "rb");
 			fseek(file, 0, SEEK_END);
@@ -422,7 +430,7 @@ int main(int argc, char *argv[])
 
 	global_option.scale_str = "100%";
 	global_option.scale_num = 100;
-	global_option.save_mask = false;
+	global_option.save_mask = true;
 
 	int c;
 
@@ -523,7 +531,7 @@ int main(int argc, char *argv[])
 	}
 	
 	FILE *f = save_mask(output_file, header, tex_list,tga_list);
-	save_texture(f, header, tex_list,tga_list, format);
+	//save_texture(f, header, tex_list,tga_list, format);
 
 	printf("input:%s\nframes:%d\noutput:%s\n",input_dir?input_dir:input_file, header.num_frame, output_file);
 	return 0;

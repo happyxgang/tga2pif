@@ -1,7 +1,11 @@
 #include "stdafx.h"
 #include "linecompress.h"
-
-// Ñ¹Ëõbuff
+#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "CCLuaEngine.h"
+#include "CCLuaStack.h"
+// å‹ç¼©buff
 bool line_compress(char *buff, int32 line_size, int32 number_line, char *compress_buff, int32 &len)
 {
 	int32 length=0;
@@ -11,14 +15,14 @@ bool line_compress(char *buff, int32 line_size, int32 number_line, char *compres
 		int32 j = 0;
 		uint8 num = 0;
 		src = buff + i*line_size;
-		// È¡µÚÒ»¸ö
+		// å–ç¬¬ä¸€ä¸ª
 		char last = *src++;j++;num++;
 		while(j<line_size){
 			char cur = *src++;
 			if (cur == last || num > 255){
 				num ++;
 			}else{
-				// Ğ´Èë
+				// å†™å…¥
 				*dest ++ = last;
 				*dest ++ = num;
 				last = cur;
@@ -26,7 +30,7 @@ bool line_compress(char *buff, int32 line_size, int32 number_line, char *compres
 			}
 			j++;
 		}
-		// ĞĞ½áÊø·û
+		// è¡Œç»“æŸç¬¦
 		*dest ++= 0;
 		*dest ++= 0;
 	}
@@ -37,21 +41,21 @@ bool line_compress(char *buff, int32 line_size, int32 number_line, char *compres
 	len = length;
 	return true;
 }
-// ´ÓÑ¹ËõµÄÄÚ´æÖĞÈ¡×ø±ê(x,y)µÄÊı¾İ
+// ä»å‹ç¼©çš„å†…å­˜ä¸­å–åæ ‡(x,y)çš„æ•°æ®
 char line_compress_get(char *compress_buff, int32 x, int32 y)
 {
 	char *src = compress_buff;
 	int32 line = 0;
 
 	char val, num;
-	// ÕÒµ½µÚyĞĞ
+	// æ‰¾åˆ°ç¬¬yè¡Œ
 	while (true){
 		if (line == y){
 			break;
 		}
 		val = *src++;
 		num = *src++; 
-		if (val == 0 && num ==0){ // ĞĞ½áÊø·û
+		if (val == 0 && num ==0){ // è¡Œç»“æŸç¬¦
 			line ++;
 		}
 	}
@@ -60,7 +64,7 @@ char line_compress_get(char *compress_buff, int32 x, int32 y)
 		val = *src++;
 		num = *src++;
 		if (row + num >= x){
-			return val; // ÕıÈ·µÄ·µ»ØÂ·¾¶
+			return val; // æ­£ç¡®çš„è¿”å›è·¯å¾„
 		}else{
 			row += num;
 		}
@@ -69,11 +73,11 @@ char line_compress_get(char *compress_buff, int32 x, int32 y)
 }
 
 
-// Ñ¹Ëõbuff
+// å‹ç¼©buff
 //------------------------------------------------------------------------------
 /** | 7 | 6 ~ 0 |
-*    Öµ    ÊıÁ¿
-* ÀàËÆÓÚÉÏÃæµÄËã·¨£¬ °ÑvalºÍnumÑ¹ËõÎªÒ»¸ö×Ö½Ú
+*    å€¼    æ•°é‡
+* ç±»ä¼¼äºä¸Šé¢çš„ç®—æ³•ï¼Œ æŠŠvalå’Œnumå‹ç¼©ä¸ºä¸€ä¸ªå­—èŠ‚
 * header:
 * 4 width;
 * 4 height;
@@ -106,7 +110,7 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 		uint8 num = 0;
 		src = buff + i*line_size;
 
-		// Èç¹ûÕûĞĞ¶¼ÊÇ0µÄ»°£¬ ÌîÈë0±íÊ¾ÕâÒ»ĞĞ
+		// å¦‚æœæ•´è¡Œéƒ½æ˜¯0çš„è¯ï¼Œ å¡«å…¥0è¡¨ç¤ºè¿™ä¸€è¡Œ
 		bool all_zero = true;
 		while (j<line_size){
 			if(*src ++ != 0){
@@ -117,20 +121,20 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 		}
 		if (all_zero){
 			*dest ++ = 0;
-			// ÌîÈëÆ«ÒÆÁ¿
+			// å¡«å…¥åç§»é‡
 			mask_buff->line_offset[i] = dest - (uint8 *)compress_buff;
 			continue;
 		}
 
 		j=0; num = 0; src = buff + i*line_size;
-		// È¡µÚÒ»¸ö
+		// å–ç¬¬ä¸€ä¸ª
 		uint8 last = *src++;j++;num++;
 		while(j<line_size){
 			uint8 cur = *src++;
 			if (cur == last && num < 0x80-1){
 				num ++;
 			}else{
-				// Ğ´Èë
+				// å†™å…¥
 				*dest ++ = last<<7 | num;
 #ifdef MASK_FILE
 				fprintf(f, "(%d,%d)",last, num);
@@ -140,7 +144,7 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 			}
 			j++;
 		}
-		// ÌîÈëÆ«ÒÆÁ¿
+		// å¡«å…¥åç§»é‡
 		mask_buff->line_offset[i] = dest - (uint8 *)compress_buff;
 #ifdef MASK_FILE
 		fprintf(f, "\n");
@@ -162,7 +166,7 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 #undef MASK_FILE
 	return true;
 }
-// ´ÓÑ¹ËõµÄÄÚ´æÖĞÈ¡×ø±ê(x,y)µÄÊı¾İ
+// ä»å‹ç¼©çš„å†…å­˜ä¸­å–åæ ‡(x,y)çš„æ•°æ®
 char mask_compress_get(char *compress_buff,int32 mask_scale, int32 x, int32 y)
 {
 	char *src = compress_buff;
@@ -178,12 +182,76 @@ char mask_compress_get(char *compress_buff,int32 mask_scale, int32 x, int32 y)
 		num = (*src&0x7f);
 		src ++;
 		if (row + num >= x){
-			return val; // ÕıÈ·µÄ·µ»ØÂ·¾¶
+			return val; // æ­£ç¡®çš„è¿”å›è·¯å¾„
 		}else if(num == 0){
-			return val; // 0±íÊ¾ÕûĞĞ¶¼ÊÇ0
+			return val; // 0è¡¨ç¤ºæ•´è¡Œéƒ½æ˜¯0
 		}else{
 			row += num;
 		}
 	}
 	return 0;
+}
+int mask_is_empty(lua_State* L){
+	void* compressed_buff = lua_touserdata(L, 1);
+	if(compressed_buff == NULL){
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	if(!lua_isnumber(L, 2) || !lua_isnumber(L, 3) ){
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+	int32 x = lua_tonumber(L, 2);
+	int32 y = lua_tonumber(L, 3);
+
+
+	int32 mask_scale = 1;
+	if(lua_isnumber(L, 4)){
+		mask_scale = lua_tonumber(L, 4);	
+	}
+
+	char v = mask_compress_get(compressed_buff, mask_scale, x, y);
+	if (v > 0 ){
+		lua_pushbolean(L, 1);
+	}else{
+		lua_pushbolean(L, 0);
+	}
+	return 1;
+}
+int get_mask(lua_State* L){
+	const char* path;
+	if(!lua_isstring(L, 1)){
+		lua_pushlightuserdata(L, NULL);
+		return 1;
+	}
+	path = lua_tostring(L, 1);	
+	FILE* file = fopen(path, "rb");
+	if (file == NULL){
+		lua_pushlightuserdata(L, NULL);
+		return 1;
+	}
+	fseek(file, 0, SEEK_END);
+	long size = ftell(file);
+	rewind(file);
+	char* buffer = (char*) malloc(sizeof(char) * size);
+	if (buffer == NULL){
+		lua_pushlightuserdata(L, NULL);
+		return 1;
+	}
+	size_t num = 0;
+	num = fread(buffer, sizeof(char), size, file);
+	if (num != size){
+		lua_pushlightuserdata(L, NULL);
+		return 1;
+	}
+
+	fclose(file);
+
+	lua_pushlightuserdata(L, buffer);
+	return 1;
+}
+void bind_lua_mask(lua_State* L){
+	lua_register(L, "mask_is_empty", mask_is_empty);	
+	lua_register(L, "get_mask",get_mask);
 }

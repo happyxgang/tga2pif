@@ -7,22 +7,23 @@ CC=clang++
 LINK=clang++
 MAKEARGS=-Wdeprecated-writable-strings
 CFLAGS=-g $(MAKEARGS) -Winvalid-source-encoding # -Werror 
-OPTIMIZE=-O2
+OPTIMIZE=-O0
 BIN=tga2pif
 LFLAGS=-v
 
 INCLUDES=-I. -I/user/local/include -I/opt/local/include
 
 all:depend bin after_process
-	cp tga2pif ../../../work/tool
+	#cp tga2pif ../../../work/tool
+	ls
 
 depend:
 	-echo $(OBJ)
 	-rm -f tmpdepend
 	for i in $(SRC); do $(CC) $(INCLUDES) -MM $$i >>tmpdepend; done
-	#sed -e "s!^[^ ]!$(OBJDIR)/&!" <tmpdepend >.Dependencies
-	sed <tmpdepend >.Dependencies
-	-rm -f tmpdepend
+	sed -e "s!^[^ ]!$(OBJDIR)/&!" <tmpdepend >.Dependencies
+	#sed <tmpdepend >.Dependencies
+	#-rm -f tmpdepend
 
 -include .Dependencies
 %.o:%.c 
