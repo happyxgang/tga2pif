@@ -117,10 +117,16 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 			}
 			j++;
 		}
+        if (i == 16 && j > 255){
+            printf("x=%d,\tsrc=%d \n",j, *src);
+        }
 		if (all_zero){
 			*dest ++ = 0;
 			// 填入偏移量
 			mask_buff->line_offset[i] = dest - (uint8 *)compress_buff;
+            if (i > 15 && i < 25){
+                printf("num: %d\t offset: %d\n", i, mask_buff->line_offset[i]);
+            }
 			continue;
 		}
 
@@ -144,6 +150,9 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 		}
 		// 填入偏移量
 		mask_buff->line_offset[i] = dest - (uint8 *)compress_buff;
+        if (i > 15 && i < 25){
+            printf("num: %d\t offset: %d\n", i, mask_buff->line_offset[i]);
+        }
 #ifdef MASK_FILE
 		fprintf(f, "\n");
 #endif
