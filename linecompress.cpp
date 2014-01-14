@@ -117,6 +117,9 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 			}
 			j++;
 		}
+        if (i == 16 && j > 255){
+            printf("x=%d,\tsrc=%d \n",j, *src);
+        }
 		if (all_zero){
 			*dest ++ = 0;
 			// 填入偏移量
@@ -144,9 +147,6 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 				num = 1;
 			}
 			j++;
-            if (i == 16 && j > 255){
-                printf("x=%d,\tsrc=%d \n",j, *src);
-            }
 		}
 		// 填入偏移量
 		mask_buff->line_offset[i] = dest - (uint8 *)compress_buff;
@@ -183,11 +183,21 @@ char mask_compress_get(char *compress_buff,int32 mask_scale, int32 x, int32 y)
 	uint8 val, num;
 
 	src += buff->line_offset[ (y/mask_scale) * mask_scale];
+	char * osrc = src;
+	int max = buff->width;
+	if ( y < buff->height - 1 ){
+		int offset1 = buff->line_offset[ (y/mask_scale) * mask_scale ];
+		int offset2 = buff->line_offset[ (y + 1/mask_scale) * mask_scale ];
+		max = offset2 - offset1;	
+	}	
 	int32 row = 0;
 	while(true){
 		val = (*src&0x80) >> 7;
 		num = (*src&0x7f);
 		src ++;
+		if(src > osrc + max){
+			printf("errrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
+		}
 		if (row + num >= x){
 			return val; // 正确的返回路径
 		}else if(num == 0){
