@@ -3,8 +3,6 @@
 #include "string.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "CCLuaEngine.h"
-#include "CCLuaStack.h"
 // 压缩buff
 bool line_compress(char *buff, int32 line_size, int32 number_line, char *compress_buff, int32 &len)
 {
@@ -190,68 +188,4 @@ char mask_compress_get(char *compress_buff,int32 mask_scale, int32 x, int32 y)
 		}
 	}
 	return 0;
-}
-int mask_is_empty(lua_State* L){
-	void* compressed_buff = lua_touserdata(L, 1);
-	if(compressed_buff == NULL){
-		lua_pushboolean(L, 0);
-		return 1;
-	}
-
-	if(!lua_isnumber(L, 2) || !lua_isnumber(L, 3) ){
-		lua_pushboolean(L, 0);
-		return 1;
-	}
-	int32 x = lua_tonumber(L, 2);
-	int32 y = lua_tonumber(L, 3);
-
-
-	int32 mask_scale = 1;
-	if(lua_isnumber(L, 4)){
-		mask_scale = lua_tonumber(L, 4);	
-	}
-
-	char v = mask_compress_get(compressed_buff, mask_scale, x, y);
-	if (v > 0 ){
-		lua_pushbolean(L, 1);
-	}else{
-		lua_pushbolean(L, 0);
-	}
-	return 1;
-}
-int get_mask(lua_State* L){
-	const char* path;
-	if(!lua_isstring(L, 1)){
-		lua_pushlightuserdata(L, NULL);
-		return 1;
-	}
-	path = lua_tostring(L, 1);	
-	FILE* file = fopen(path, "rb");
-	if (file == NULL){
-		lua_pushlightuserdata(L, NULL);
-		return 1;
-	}
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	rewind(file);
-	char* buffer = (char*) malloc(sizeof(char) * size);
-	if (buffer == NULL){
-		lua_pushlightuserdata(L, NULL);
-		return 1;
-	}
-	size_t num = 0;
-	num = fread(buffer, sizeof(char), size, file);
-	if (num != size){
-		lua_pushlightuserdata(L, NULL);
-		return 1;
-	}
-
-	fclose(file);
-
-	lua_pushlightuserdata(L, buffer);
-	return 1;
-}
-void bind_lua_mask(lua_State* L){
-	lua_register(L, "mask_is_empty", mask_is_empty);	
-	lua_register(L, "get_mask",get_mask);
 }

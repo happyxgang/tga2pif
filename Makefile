@@ -35,7 +35,6 @@ bin:$(OBJ)
 	$(LINK) $(LFLAGS) $(OBJ) -o $(BIN)
 
 after_process:
-	-rm -rf $(OBJ)
 
 clean:
 	-rm -f .Dependencies

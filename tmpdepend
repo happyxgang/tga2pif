@@ -1,0 +1,5 @@
+linecompress.o: linecompress.cpp stdafx.h linecompress.h
+ltga.o: ltga.cpp ltga.h
+main.o: main.cpp stdafx.h tga.h linecompress.h
+tga.o: tga.cpp stdafx.h tga.h bmpfile.h ltga.h
+bmpfile.o: bmpfile.c bmpfile.h

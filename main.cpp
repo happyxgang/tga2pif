@@ -97,7 +97,7 @@ struct {
 ltga_t process_tga(const char *filename)
 {
 	ltga_t tga = ltga_load(filename);
-	ltga_clip(tga);
+	//ltga_clip(tga);
 	return tga;
 }
 
@@ -136,8 +136,7 @@ void version()
 
 void usage()
 {
-	printf("usage:tga2fsi.exe -d dir -o output.fsi -f [dxt5|argb8|png] -s 50%%\n");
-	printf("   or:tga2fsi.exe -i input_file -o output.fsi -f [dxt5|argb8|png] -s 50%%\n");
+	printf("   or:tga2fsi.exe -i input_file -o output.fsi -s 50%%\n");
 	exit(-1);
 }
 
@@ -178,10 +177,6 @@ void get_texture_list(char *input_dir, fsi_header &header, std::vector<struct fs
 	}
 
 	uint32 total_len = 0;
-	header.speed = 4;// 
-	header.id = FS_FSI_FILE_ID;
-	header.version = FS_FSI_VERSION;
-	header.num_frame = (uint8)tgafiles.size();
 
 	for( i=0; i<tgafiles.size(); i++ ){
 		int32 len = tgafiles[i].size();
@@ -203,21 +198,6 @@ void get_texture_list(char *input_dir, fsi_header &header, std::vector<struct fs
 				tex.info.offx, tex.info.offy, tex.info.valid_height, tex.info.valid_width);
 
 		tex_list.push_back(tex);
-		header.width = tga->width;
-		header.height = tga->height;
-	}
-
-	if(header.kx == 0 && header.ky == 0){
-		if( header.height == 320 ){
-			header.kx = 160;
-			header.ky = 220;
-		}else if ( header.width == 500 ){
-			header.kx = 250;
-			header.ky = 320;
-		}else if ( header.width == 800){
-			header.kx = 400;
-			header.ky = 460;
-		}
 	}
 
 	printf("\n");
@@ -231,11 +211,11 @@ void print_info(fsi_frame_info* info ){
 		printf("len%u\t\n", info->len);
 		printf("offset%u\t\n", info->offset);
 }
-#define MASK_SCALE 2
+#define MASK_SCALE 1 
 FILE *save_mask(const char *output_file,
-					struct fsi_header &header,
-					std::vector<struct fsi_texture> &tex_list,
-					vector<ltga_t> tga_list) {	
+					//struct fsi_header &header,
+					//std::vector<struct fsi_texture> &tex_list,
+					std::vector<ltga_t> tga_list) {	
 	//------------------------------------------------------------------------------
 	/**
 	* 
@@ -261,18 +241,7 @@ FILE *save_mask(const char *output_file,
 	snprintf(filename, sizeof(filename), "%s", output_file);
 	f = fopen(filename, "wb");
 
-	//fwrite(&header, sizeof(struct fsi_header), 1, f);
-
-	for (i=0; i<tex_list.size(); i++) {
-		struct fsi_texture *tex = &tex_list[i];
-		fwrite(&tex->info, sizeof(struct fsi_frame_info), 1, f);
-		print_info(&tex->info);
-	}
-
-	header.mask_scale = MASK_SCALE;
-
 	ltga_t tga = tga_list[0];
-
 	unsigned char *alpha_buff = (unsigned char *)malloc(tga->valid_width * tga->valid_height);
 	for (uint32 ij=0; ij<tga->valid_height; ij += 1){
 		for (uint32 ii=0; ii<tga->valid_width; ii += 1) {
@@ -280,7 +249,7 @@ FILE *save_mask(const char *output_file,
 			if (ij>=tga->height || ii>=tga->width) {
 				*alpha=0;
 			} else {
-				if((uint8)*(tga->alpha_buf + (ij + tga->offsety)*tga->width + ii + tga->offsetx) > 50){
+				if((uint8)*(tga->alpha_buf + (ij + tga->offsety)*tga->width + ii + tga->offsetx) > 150){
 					*alpha = 1;
 				} else {
 					*alpha=0;
@@ -297,114 +266,10 @@ FILE *save_mask(const char *output_file,
 
 	if (global_option.save_mask) {
 		printf("saving mask\n" );
-		header.mask_width = tga->valid_width;
-		header.mask_height = tga->valid_height;
-		header.mask_len = len;
-		header.mask_offset = ftell(f);
-
-		//fseek(f, 0, SEEK_SET);
-		//fwrite(&header, sizeof(struct fsi_header), 1, f);
-		//fseek(f, header.mask_offset, SEEK_SET);
 		fwrite(buff2, len, 1, f);
-		header.texture_offset = ftell(f);
 		delete buff2;
-	} else {
-		header.mask_width = 0;
-		header.mask_height = 0;
-		header.mask_len = 0;
-		header.mask_offset = 0;
-		header.texture_offset = ftell(f);
-	}
+	} 
 	return f;
-}
-
-
-void save_texture(FILE *f, 
-						struct fsi_header &header, 
-						std::vector<struct fsi_texture> &tex_list,
-						vector<ltga_t> tga_list, 
-						int32 format)
-{
-
-	DWORD flen;
-	int i;
-
-	char filename[1024];
-
-	fseek(f, header.texture_offset, SEEK_SET);
-	header.texture_len = 0;
-	for( i=0; i<header.num_frame; i++ ) {
-		ltga_t tga = tga_list[i];
-		ltga_save(tga, "1.tga");
-
-		if (format == FMT_DXT5) {
-			printf(">>> dds format not supported!");
-			exit(1);
-		} else if (format == FMT_PNG) {
-			if (global_option.scale_str) {
-				char command[255];
-				sprintf(command, "convert -scale %s 1.tga 1.png", global_option.scale_str);
-				printf("execute:%s\n", command);
-				system(command);
-				ltga_scale(tga, global_option.scale_str);
-			} else {
-				system("convert 1.tga 1.png\n");
-			}
-			system("png8 -O 1.png\n");
-			
-			FILE *file = fopen("1.png", "rb");
-			fseek(file, 0, SEEK_END);
-			int32 file_len = ftell(file);
-			fseek(file, 0, SEEK_SET);
-			char *image_buffer = (char *)malloc(file_len);
-			fread(image_buffer, 1, file_len, file);
-			fclose(file);
-			system("rm 1.tga 1.png");
-
-
-			tex_list[i].info.offx = tga->offsetx;
-			tex_list[i].info.offy = tga->offsety;
-			tex_list[i].info.valid_width = tga->valid_width;
-			tex_list[i].info.valid_height = tga->valid_height;
-			tex_list[i].info.len = file_len;
-			tex_list[i].info.offset = ftell(f);
-			header.texture_len += file_len;
-
-			fwrite(image_buffer, file_len, 1, f);
-			free(image_buffer);
-		}
-
-	}
-
-	fseek(f, 0, SEEK_SET);
-
-	fwrite(&header, sizeof(struct fsi_header), 1, f);
-
-	for( i=0; i<tex_list.size(); i++ ){
-		struct fsi_texture *tex = &tex_list[i];
-		fwrite(&tex->info, sizeof(struct fsi_frame_info), 1, f);
-	}
-
-	fclose(f);
-}
-
-void get_keypoint(const char *output_file, int32 &kx, int32 &ky)
-{
-	FILE *file = fopen(output_file, "r");
-	if( file != INVALID_HANDLE_VALUE){
-		struct fsi_header header;
-		fread(&header, sizeof(struct fsi_header), 1, file);
-		fclose(file);
-		kx = header.kx;
-		ky = header.ky;
-
-		char command[1024];
-		sprintf(command, "rm %s", output_file);
-		system(command);
-	}else{
-		kx = 0;
-		ky = 0;
-	}
 }
 
 int main(int argc, char *argv[])
@@ -438,20 +303,11 @@ int main(int argc, char *argv[])
 
 	while ((c = getopt(argc, argv, "d:i:o:f:ms:")) != -1){
 		switch(c){
-		case 'd':
-			input_dir = optarg;
-			break;
 		case 'i':
 			input_file = optarg;
 			break;
 		case 'o':
 			output_file = optarg;
-			break;
-		case 'f':
-			format_string = optarg;
-			break;
-		case 'm':
-			global_option.save_mask = true;
 			break;
 		case 's':
 			global_option.scale_str = optarg;
@@ -473,66 +329,20 @@ int main(int argc, char *argv[])
 		usage();
 	}
 
-	get_keypoint(output_file, kx, ky);
-	printf("file keypoint:%d,%d\n", kx, ky);
-
-	if ( strcmp(format_string, "dxt5") == 0 ){
-		format = FMT_DXT5;
-	} else if (strcmp(format_string, "argb8") == 0){
-		format = FMT_A8R8G8B8;
-	} else if (strcmp(format_string, "png") == 0) {
-		format = (D3DFORMAT)FMT_PNG;
-	} else {
-		format = FMT_DXT5;
-	}
-
-	fsi_header header;
-	header.format = format;
-	header.kx = kx;
-	header.ky = ky;
-	header.scale = global_option.scale_num;
-
-	std::vector<struct fsi_texture> tex_list;
-
 	vector<ltga_t> tga_list;
 
-	if( input_dir ){ 
-		get_texture_list(input_dir, header, tex_list, tga_list);
-	}else if(input_file){
+	if(input_file){
 		ltga_t tga = process_tga(input_file);
-		tga->valid_width = (tga->width + 3)/4*4;
-		tga->valid_height = (tga->height + 3)/4*4;
-		tga->offsetx = 0;
-		tga->offsety = 0;
-
-		header.format = format;
-		header.speed = 4;
-		header.kx = 0;
-		header.ky = 0;
-		header.id = FS_FSI_FILE_ID;
-		header.version = FS_FSI_VERSION;
-		header.num_frame = 1;
-		header.width = (tga->width + 3)/4*4;
-		header.height = (tga->height + 3)/4*4;
-
-		struct fsi_texture tex;
-		tex.frame = 0;
-		tex.info.offx = 0;
-		tex.info.offy = 0;
-		tex.info.valid_height = tga->valid_height;
-		tex.info.valid_width = tga->valid_width;
-
-		printf("tex info: offx=%d, offy=%d, h=%d, w=%d\n", 
-				tex.info.offx, tex.info.offy, tex.info.valid_height, tex.info.valid_width);
-
-		tex_list.push_back(tex);
-
+		//tga->valid_width = (tga->width + 3)/4*4;
+		//tga->valid_height = (tga->height + 3)/4*4;
+		//tga->offsetx = 0;
+		//tga->offsety = 0;
+		printf("tga info: offx=%d, offy=%d, w=%d, h=%d\n", 
+				tga->offsetx, tga->offsety, tga->valid_width, tga->valid_height);
 		tga_list.push_back(tga);
 	}
 	
-	FILE *f = save_mask(output_file, header, tex_list,tga_list);
-	//save_texture(f, header, tex_list,tga_list, format);
+	FILE *f = save_mask(output_file, tga_list);
 
-	printf("input:%s\nframes:%d\noutput:%s\n",input_dir?input_dir:input_file, header.num_frame, output_file);
 	return 0;
 }
