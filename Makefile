@@ -23,7 +23,7 @@ depend:
 	for i in $(SRC); do $(CC) $(INCLUDES) -MM $$i >>tmpdepend; done
 	sed -e "s!^[^ ]!$(OBJDIR)/&!" <tmpdepend >.Dependencies
 	#sed <tmpdepend >.Dependencies
-	#-rm -f tmpdepend
+	-rm -f tmpdepend
 
 -include .Dependencies
 %.o:%.c 
@@ -35,7 +35,7 @@ bin:$(OBJ)
 	$(LINK) $(LFLAGS) $(OBJ) -o $(BIN)
 
 after_process:
-
+	-rm *.o
 clean:
 	-rm -f .Dependencies
 	-rm -rf $(OBJ)

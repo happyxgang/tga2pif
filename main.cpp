@@ -30,64 +30,6 @@ using namespace std;
 #define FS_MASK_FILE_ID 'MASK'
 #define FS_FSI_VERSION 18
 
-#pragma pack (push)
-#pragma pack (1)
-
-	//////////////////////////////////////////////////////////////////////////
-	//*.fsi
-	struct fsi_frame_info
-	{
-		int16 offx;
-		int16 offy;
-		uint16 valid_width;
-		uint16 valid_height; 
-		uint32 len; 
-		uint32 offset; 
-		uint8 unused[4];
-	};
-
-	struct fsi_header
-	{
-		uint32 id; // FSI
-
-		uint8  version; 
-		uint8  num_frame;
-
-		uint32 format;
-		uint32 speed;
-
-		uint16 kx;
-		uint16 ky; 
-
-		uint16 width;
-		uint16 height; 
-
-		int32 mask_scale;
-		int32 mask_width;
-		int32 mask_height;
-		int32 mask_offset;
-		int32 mask_len;
-
-		int32 texture_offset;
-		int32 texture_len;
-
-		int8 scale;
-		int8 unused[3];
-
-		//fsi_frame_info frames[0];
-		//void *mask_data;
-		//void *texture_data;
-	};
-	
-
-	struct fsi_texture{
-		uint32 frame;
-		struct fsi_frame_info info;
-		//LPDIRECT3DTEXTURE9 texture;
-	};
-
-#pragma pack (pop)
-
 struct {
 	char *scale_str;
 	char scale_num;
@@ -97,36 +39,7 @@ struct {
 ltga_t process_tga(const char *filename)
 {
 	ltga_t tga = ltga_load(filename);
-	//ltga_clip(tga);
 	return tga;
-}
-
-int get_dir(const char *path)
-{
-	char p[255];
-	char *str_dir = NULL;
-	int state = 0;
-	strcpy(p, path);
-
-	for( int i=0; i<strlen(p); i++ ){
-		switch( state ){
-		case 0: 
-			if( p[i] != '0' ){
-				str_dir = p + i;
-				state = 1;
-			}
-			break;
-		case 1: 
-			if( p[i] == '\\' || p[i] == '/' ){
-				p[i] = 0;
-				state = 2;
-			}
-			break;
-		default:
-			break;
-		}
-	}
-	return atoi(str_dir);
 }
 
 void version()
@@ -140,98 +53,9 @@ void usage()
 	exit(-1);
 }
 
-bool get_files(char *dir, vector<string> &files)
-{
-	DIR * dp = opendir(dir);
-	if (dp == NULL) {
-		return false;	
-	}
-
-	struct dirent *dirp;
-	while((dirp = readdir(dp)) != NULL) {
-		if (strcmp(dirp->d_name, ".") == 0 ||
-				strcmp(dirp->d_name, "..") == 0) {
-			continue;
-		}
-		files.push_back(string(dirp->d_name));
-	}
-
-	return true;
-}
-
-void get_texture_list(char *input_dir, fsi_header &header, std::vector<struct fsi_texture> &tex_list, vector<ltga_t> &tgas)
-{
-	vector<std::string> files;
-	vector<std::string> tgafiles;
-
-	if (!get_files(input_dir, files)) {
-		printf(">>> input directory error!");
-		exit(1);
-	}
-
-	size_t i;
-	for( i =0; i< files.size(); i++ ){
-		if( files[i].find(".tga") == files[i].length() - 4 ){
-			tgafiles.push_back(files[i]);
-		}
-	}
-
-	uint32 total_len = 0;
-
-	for( i=0; i<tgafiles.size(); i++ ){
-		int32 len = tgafiles[i].size();
-		if( len > 40 ) len -= 40;
-		printf(">>> processing tga file %s... \n", tgafiles[i].c_str());
-		struct fsi_texture tex;
-		ltga_t tga = process_tga((string(input_dir) + "/" + tgafiles[i]).c_str());
-		tga->valid_width = (tga->valid_width + 3)/4*4;
-		tga->valid_height = (tga->valid_height + 3)/4*4;
-		tgas.push_back(tga);
-
-		tex.frame = (uint8)i;
-		tex.info.offx = tga->offsetx;
-		tex.info.offy = tga->offsety;
-		tex.info.valid_height = tga->valid_height;
-		tex.info.valid_width = tga->valid_width;
-
-		printf("tex info: offx=%d, offy=%d, h=%d, w=%d\n", 
-				tex.info.offx, tex.info.offy, tex.info.valid_height, tex.info.valid_width);
-
-		tex_list.push_back(tex);
-	}
-
-	printf("\n");
-	printf(">>> tga file process done\n");
-}
-void print_info(fsi_frame_info* info ){
-		printf("offx%u\t\n", info->offx);
-		printf("offy%u\t\n", info->offy);
-		printf("valid_width%u\t\n",info->valid_width);
-		printf("valid_height%u\t\n", info->valid_height);
-		printf("len%u\t\n", info->len);
-		printf("offset%u\t\n", info->offset);
-}
 #define MASK_SCALE 1 
 FILE *save_mask(const char *output_file,
-					//struct fsi_header &header,
-					//std::vector<struct fsi_texture> &tex_list,
 					std::vector<ltga_t> tga_list) {	
-	//------------------------------------------------------------------------------
-	/**
-	* 
-	* fsi header:
-	*
-	* header:
-	* 4 block_number
-	*
-	* blocks:
-	* 4 data_len
-	* 4 width
-	* 4 height
-	* data_len data
-	*
-	* ...
-	*/
 
 	FILE *f;
 	DWORD flen;
@@ -249,7 +73,7 @@ FILE *save_mask(const char *output_file,
 			if (ij>=tga->height || ii>=tga->width) {
 				*alpha=0;
 			} else {
-				if((uint8)*(tga->alpha_buf + (ij + tga->offsety)*tga->width + ii + tga->offsetx) > 150){
+				if((uint8)*(tga->alpha_buf + (ij + tga->offsety)*tga->width + ii + tga->offsetx) > 1){
 					*alpha = 1;
 				} else {
 					*alpha=0;
@@ -335,10 +159,6 @@ int main(int argc, char *argv[])
 
 	if(input_file){
 		ltga_t tga = process_tga(input_file);
-		//tga->valid_width = (tga->width + 3)/4*4;
-		//tga->valid_height = (tga->height + 3)/4*4;
-		//tga->offsetx = 0;
-		//tga->offsety = 0;
 		printf("tga info: offx=%d, offy=%d, w=%d, h=%d\n", 
 				tga->offsetx, tga->offsety, tga->valid_width, tga->valid_height);
 		tga_list.push_back(tga);

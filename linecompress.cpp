@@ -142,6 +142,9 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 			}
 			j++;
 		}
+        if (num > 1){
+            *dest++ = last<< 7 | num;
+        }
 		// 填入偏移量
 		mask_buff->line_offset[i] = dest - (uint8 *)compress_buff;
 #ifdef MASK_FILE
@@ -163,29 +166,4 @@ bool mask_compress(char *buff, int32 line_size, int32 number_line, int32 mask_sc
 #endif
 #undef MASK_FILE
 	return true;
-}
-// 从压缩的内存中取坐标(x,y)的数据
-char mask_compress_get(char *compress_buff,int32 mask_scale, int32 x, int32 y)
-{
-	char *src = compress_buff;
-	mask_buffer *buff = (mask_buffer *)compress_buff;
-	int32 line = 0;
-
-	uint8 val, num;
-
-	src += buff->line_offset[ (y/mask_scale) * mask_scale];
-	int32 row = 0;
-	while(true){
-		val = (*src&0x80) >> 7;
-		num = (*src&0x7f);
-		src ++;
-		if (row + num >= x){
-			return val; // 正确的返回路径
-		}else if(num == 0){
-			return val; // 0表示整行都是0
-		}else{
-			row += num;
-		}
-	}
-	return 0;
 }
