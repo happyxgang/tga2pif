@@ -255,7 +255,7 @@ FILE *save_mask(const char *output_file,
 					*alpha=0;
 				}
 			}
-            if(ij == 16 && ii > 255){
+            if(ij == 16 ){
                 printf("x=%d, \t alpha=%d \n", ii, *alpha); 
             }
 		}
