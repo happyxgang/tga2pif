@@ -44,7 +44,7 @@ ltga_t process_tga(const char *filename)
 
 void version()
 {
-	printf("============= puppy animation pack tool (v1.9) ===============\n");
+	//printf("============= puppy animation pack tool (v1.9) ===============\n");
 }
 
 void usage()
@@ -79,9 +79,6 @@ FILE *save_mask(const char *output_file,
 					*alpha=0;
 				}
 			}
-            if(ij == 16 ){
-                printf("x=%d, \t alpha=%d \n", ii, *alpha); 
-            }
 		}
 	}
 	
@@ -91,8 +88,9 @@ FILE *save_mask(const char *output_file,
 	mask_compress((char *)alpha_buff, tga->valid_width, tga->valid_height, MASK_SCALE, buff2, len);
 
 	if (global_option.save_mask) {
-		printf("saving mask\n" );
+		printf("saving mask:%s\n",output_file );
 		fwrite(buff2, len, 1, f);
+        printf("save ended\n");
 		delete buff2;
 	} 
 	return f;
@@ -119,8 +117,6 @@ int main(int argc, char *argv[])
 	char *output_file = 0;
 	char *format_string = (char *)def_format;
 
-	global_option.scale_str = "100%";
-	global_option.scale_num = 100;
 	global_option.save_mask = true;
 
 	int c;
@@ -135,21 +131,12 @@ int main(int argc, char *argv[])
 		case 'o':
 			output_file = optarg;
 			break;
-		case 's':
-			global_option.scale_str = optarg;
-			break;
 		case '?':
 			usage();
 		default:
 			break;
 		}
 	}
-
-	char s = 0;
-	for (int i=0; i<strlen(global_option.scale_str) -1; i ++) {
-		s = s*10 + global_option.scale_str[i] - '0';
-	}
-	global_option.scale_num = s;
 
 	if (!output_file || (!input_file && !input_dir) || (input_dir && input_file)) {
 		usage();
@@ -159,12 +146,10 @@ int main(int argc, char *argv[])
 
 	if(input_file){
 		ltga_t tga = process_tga(input_file);
-		printf("tga info: offx=%d, offy=%d, w=%d, h=%d\n", 
-				tga->offsetx, tga->offsety, tga->valid_width, tga->valid_height);
 		tga_list.push_back(tga);
 	}
 	
 	FILE *f = save_mask(output_file, tga_list);
-
+         
 	return 0;
 }

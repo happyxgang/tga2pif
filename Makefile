@@ -14,7 +14,6 @@ LFLAGS=-v
 INCLUDES=-I. -I/user/local/include -I/opt/local/include
 
 all:depend bin after_process
-	#cp tga2pif ../../../work/tool
 	ls
 
 depend:

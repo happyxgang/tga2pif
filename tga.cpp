@@ -209,7 +209,6 @@ bool load_tga_buffer(byte* tgadata, byte **p_rgb_buf, byte **p_alpha_buf,int &wi
 			std::cout <<" tag does not match \n";
 			return false;
 	} 
-	std::cout <<"bImageType: " << head->bImageType << std::endl;
 	width=(int)head->wWidth,height=(int)head->wHeight;
 	rgb_buf=new byte[width*height*3];
 	channel=new byte[width*height];
